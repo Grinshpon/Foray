@@ -1,4 +1,4 @@
-#FORAY Language
+# FORAY Language
 
 ## Grammar
 
