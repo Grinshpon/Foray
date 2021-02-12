@@ -6,6 +6,7 @@ pub const Expr = union(enum) {
   Bool: bool,
   Str: []u8,
   Sym: []u8,
+  Define: []u8, //differentiate assignment from just symbol
   List: std.ArrayList(Expr),
 };
 

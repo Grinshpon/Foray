@@ -11,5 +11,7 @@ const ExprList = std.ArrayList(ast.Expr);
 pub fn parse(allocator: *Allocator, tlist: *lexer.TokenList) !ast.Expr {
   var prog = ast.Expr {.List = ExprList.init(allocator)};
 
+
+  try tlist.free();
   return prog;
 }

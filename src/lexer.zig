@@ -15,27 +15,36 @@ pub const Token = union(enum) {
 
 pub fn printToken(self: Token) void {
   switch (self) {
-    Token.Int => |x| std.debug.print(" Int({})", .{x}),
-    Token.Float => |x| std.debug.print(" Float({})", .{x}),
-    Token.Bool => |x| std.debug.print(" Bool({})", .{x}),
-    Token.Str => |x| std.debug.print(" Str(\"{}\")", .{x}),
-    Token.Sym => |x| std.debug.print(" Sym({})", .{x}),
-    Token.LParen => std.debug.print(" LParen", .{}),
-    Token.RParen => std.debug.print(" RParen", .{}),
-    Token.Colon => std.debug.print(" Assign", .{}),
-    Token.Semicolon => std.debug.print(" Unpack", .{}),
+    Token.Int => |x| std.debug.print(":Int({})", .{x}),
+    Token.Float => |x| std.debug.print(":Float({})", .{x}),
+    Token.Bool => |x| std.debug.print(":Bool({})", .{x}),
+    Token.Str => |x| std.debug.print(":Str(\"{}\")", .{x}),
+    Token.Sym => |x| std.debug.print(":Sym({})", .{x}),
+    Token.LParen => std.debug.print(":LParen", .{}),
+    Token.RParen => std.debug.print(":RParen", .{}),
+    Token.Colon => std.debug.print(":Define", .{}),
+    Token.Semicolon => std.debug.print(":Eval", .{}),
   }
 }
 
 pub const TokenNode = struct {
   data: Token,
+  row: u64,
+  col: u64,
   next: ?*TokenNode,
 
-  pub fn new(allocator: *Allocator, tk: Token) !*TokenNode {
+  pub fn new(allocator: *Allocator, tk: Token, row: u64, col: u64) !*TokenNode {
     var node: *TokenNode = try allocator.create(TokenNode);
     node.data = tk;
     node.next = null;
+    node.row = row;
+    node.col = col;
     return node;
+  }
+
+  pub fn print(self: *TokenNode) void {
+    std.debug.print(" {}:{}", .{self.row,self.col});
+    printToken(self.data);
   }
 };
 
@@ -43,7 +52,7 @@ pub const TokenList = struct {
   allocator: *Allocator,
   head: ?*TokenNode,
   last: ?*TokenNode,
-  len: usize,
+  len: u64,
 
   pub fn new(allocator: *Allocator) TokenList {
     return TokenList {
@@ -54,8 +63,8 @@ pub const TokenList = struct {
     };
   }
 
-  pub fn push(self: *TokenList, tk: Token) !void {
-    var node = try TokenNode.new(self.allocator, tk);
+  pub fn push(self: *TokenList, tk: Token, row: u64, col: u64) !void {
+    var node = try TokenNode.new(self.allocator, tk, row, col);
     if (self.head == null) {
       self.head = node;
       self.last = node;
@@ -73,7 +82,7 @@ pub const TokenList = struct {
       //note: either destroy alloc'd strings from Token.String and Token.Sym
       // or don't and transfer the pointers to the Expr from the parser/eval
       while (current != null) {
-        var node = current;
+        var node = current.?;
         current = current.?.next;
         self.allocator.destroy(node);
       }
@@ -84,7 +93,7 @@ pub const TokenList = struct {
     if (self.len > 0) {
       var current = self.head;
       while (current != null) {
-        printToken(current.?.data);
+        current.?.print();
         current = current.?.next;
       }
     }
@@ -110,7 +119,7 @@ fn isNumeric(c: u8) bool {
   return (c >= '0' and c <= '9');
 }
 
-pub fn lexNum(src: []const u8, index: *u64, len: u64) !Token {
+pub fn lexNum(src: []const u8, index: *u64, len: u64, col: *u64) !Token {
   var c: u8 = undefined;
   var ix = index.*;
   var start = ix;
@@ -130,6 +139,7 @@ pub fn lexNum(src: []const u8, index: *u64, len: u64) !Token {
 
   index.* = ix-1;
   var slice = src[start..end];
+  col.* += end-start;
   if (isFloat) {
     return Token {.Float = try fmt.parseFloat(f64, slice)};
   }
@@ -138,7 +148,7 @@ pub fn lexNum(src: []const u8, index: *u64, len: u64) !Token {
   }
 }
 
-pub fn lexSym(allocator: *Allocator, src: []const u8, index: *u64, len: u64) !Token {
+pub fn lexSym(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col: *u64) !Token {
   var c: u8 = undefined;
   var ix = index.*;
   var start = ix;
@@ -156,28 +166,38 @@ pub fn lexSym(allocator: *Allocator, src: []const u8, index: *u64, len: u64) !To
   std.mem.copy(u8, ident, slice);
 
   index.* = ix-1;
+  col.* += end-start;
   return Token {.Sym = ident};
 }
 
 pub fn lex(allocator: *Allocator, src: []const u8, len: u64) !TokenList {
+  var row: u64 = 1;
+  var col: u64 = 1;
   var tlist = TokenList.new(allocator);
   var ix: u64 = 0;
   var c = src[ix];
   while (ix < len) {
     c = src[ix];
     switch (c) {
-      '(' => {try tlist.push(Token.LParen);},
-      ')' => {try tlist.push(Token.RParen);},
-      ':' => {try tlist.push(Token.Colon);},
-      ';' => {try tlist.push(Token.Semicolon);},
+      '(' => {try tlist.push(Token.LParen, row, col); col += 1;},
+      ')' => {try tlist.push(Token.RParen, row, col); col += 1;},
+      ':' => {try tlist.push(Token.Colon, row, col); col += 1;},
+      ';' => {try tlist.push(Token.Semicolon, row, col); col += 1;},
+      '\n' => {row += 1; col = 1;},
       else => {
-        if (isSpace(c)) {} // ignore whitespace
+        if (isSpace(c)) {
+          col += 1;
+        } // ignore whitespace
         else if (isNumeric(c)) { //parse number
-          try tlist.push(try lexNum(src, &ix, len));
+          var ocol = col;
+          var tk = try lexNum(src, &ix, len, &col);
+          try tlist.push(tk,row,ocol);
         }
         // todo: chars and strings
         else { //only remaining option is to parse as a symbol. symbols can be any combination as long as it doesn't contain a reserved character
-          try tlist.push(try lexSym(allocator, src, &ix, len));
+          var ocol = col;
+          var tk = try lexSym(allocator, src, &ix, len, &col);
+          try tlist.push(tk,row,ocol);
         }
       },
     }

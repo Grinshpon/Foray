@@ -18,7 +18,7 @@ pub fn main() anyerror!void {
   var src = try allocator.alloc(u8, fSize);
   var bytes_read = try f.readAll(src);
 
-  std.debug.print("Bytes read: {d}\nSource: {s}", .{bytes_read, src});
+  std.debug.print("Bytes read: {d}\nSource: {s}\n", .{bytes_read, src});
 
   var tlist = try lexer.lex(allocator, src, bytes_read);
   var prog = parser.parse(allocator, &tlist);
