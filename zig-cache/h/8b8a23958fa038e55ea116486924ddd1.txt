@@ -1,1 +1,0 @@
-52026 281474978163048 1607891785000000000 0aca766851cb8bbefe0d0df2d42e720c C:\ProgramData\chocolatey\lib\zig\tools\zig-windows-x86_64-0.7.1\lib\libc\mingw\lib64\ntdll.def

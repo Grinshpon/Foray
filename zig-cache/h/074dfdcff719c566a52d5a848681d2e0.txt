@@ -1,1 +1,0 @@
-18381 281474978162976 1607891785000000000 b939f3fd17c6f6db4ec2dfda0e909384 C:\ProgramData\chocolatey\lib\zig\tools\zig-windows-x86_64-0.7.1\lib\libc\mingw\lib-common\advapi32.def.in
