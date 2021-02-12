@@ -128,7 +128,7 @@ pub fn lexNum(src: []const u8, index: *u64, len: u64) !Token {
     ix += 1;
   }
 
-  index.* += ix-1;
+  index.* = ix-1;
   var slice = src[start..end];
   if (isFloat) {
     return Token {.Float = try fmt.parseFloat(f64, slice)};

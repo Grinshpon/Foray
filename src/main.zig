@@ -3,7 +3,7 @@ const fs = std.fs;
 const Allocator = std.mem.Allocator;
 
 const lexer = @import("lexer.zig");
-//const parser = @import("parser.zig");
+const parser = @import("parser.zig");
 const eval = @import("eval.zig");
 
 pub fn main() anyerror!void {
@@ -20,5 +20,6 @@ pub fn main() anyerror!void {
 
   std.debug.print("Bytes read: {d}\nSource: {s}", .{bytes_read, src});
 
-  var tlist = lexer.lex(allocator, src, bytes_read);
+  var tlist = try lexer.lex(allocator, src, bytes_read);
+  var prog = parser.parse(allocator, &tlist);
 }
