@@ -4,7 +4,14 @@ FORAY is a stack based or concatenative langauge inspired by Forth and Min (whic
 
 Foray files have the extension `.fr`
 
-# Examples:
+## TODO:
+
+- [x] Lexer
+- [] Parser
+- [] Evaluater
+- [] Repl
+
+## Examples:
 
 Define a variable:
 
