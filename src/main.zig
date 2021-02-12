@@ -21,5 +21,5 @@ pub fn main() anyerror!void {
   std.debug.print("Bytes read: {d}\nSource: {s}\n", .{bytes_read, src});
 
   var tlist = try lexer.lex(allocator, src, bytes_read);
-  var prog = parser.parse(allocator, &tlist);
+  var prog = try parser.parse(allocator, &tlist);
 }

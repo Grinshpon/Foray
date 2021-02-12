@@ -205,5 +205,6 @@ pub fn lex(allocator: *Allocator, src: []const u8, len: u64) !TokenList {
   }
   std.debug.print("Token List: ", .{});
   tlist.print();
+  std.debug.print("\n",.{});
   return tlist;
 }
