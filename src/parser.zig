@@ -55,7 +55,14 @@ pub fn parseExpr(allocator: *Allocator, node: *lexer.TokenNode, skip: *u64) anye
     Token.Float => |x| return Expr {.Float = x},
     Token.Bool => |x| return Expr {.Bool = x},
     Token.Str => |x| return Expr {.Str = x},
-    Token.Sym => |x| return Expr {.Sym = x},
+    Token.Sym => |x| {
+      for (ast.operators) |op| {
+        if (std.mem.eql(u8, op, x)) {
+          return Expr {.Op = x};
+        }
+      }
+      return Expr {.Sym = x};
+    },
     Token.Semicolon => return Expr.Eval,
     Token.Colon => {
       skip.* += 1;

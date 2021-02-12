@@ -54,6 +54,7 @@ Functions are just variables containing lists, than can be evaluated with `;`.
 ```
 
 Literal lists can also be evaluated, creating an anonymous function.
+This may not seem to have much of a purpose, but it will since lexical scoping is planned.
 
 ```
 > 1 (1 +);

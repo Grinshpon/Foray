@@ -5,8 +5,10 @@ pub const Expr = union(enum) {
   Float: f64,
   Bool: bool,
   Str: []const u8,
+  //differentiate symbols, assignment, and operators (builtins)
   Sym: []const u8,
-  Define: []const u8, //differentiate assignment from just symbol
+  Op: []const u8,
+  Define: []const u8,
   List: std.ArrayList(Expr),
   Eval,
 
@@ -17,6 +19,7 @@ pub const Expr = union(enum) {
       Expr.Bool => |x| std.debug.print(" Bool({})", .{x}),
       Expr.Str => |x| std.debug.print(" Str(\"{}\")", .{x}),
       Expr.Sym => |x| std.debug.print(" Sym({})", .{x}),
+      Expr.Op => |x| std.debug.print(" Op({})", .{x}),
       Expr.Define => |x| std.debug.print(" Define({})", .{x}),
       Expr.Eval => std.debug.print(" Eval", .{}),
       Expr.List => |x| {
@@ -30,9 +33,7 @@ pub const Expr = union(enum) {
   }
 };
 
-pub const STACK_SIZE: usize = 2048;
-pub const Stack = struct {
-  data: [STACK_SIZE]Val,
-  index: usize,
+pub const operators = [_][]const u8 {
+  "*", "/", "+", "-", "=", "!", "&&", "||",
+  "drop", "swap", "rot", "dup",
 };
-
