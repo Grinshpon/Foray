@@ -7,9 +7,9 @@ Foray files have the extension `.fr`
 ## TODO:
 
 - [x] Lexer
-- [] Parser
-- [] Evaluater
-- [] Repl
+- [ ] Parser
+- [ ] Evaluater
+- [ ] Repl
 
 ## Examples:
 
