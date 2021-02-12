@@ -6,6 +6,7 @@ const ast = @import("ast.zig");
 const Expr = ast.Expr;
 
 const ExprList = ast.ExprList;
+const Dict = std.AutoArrayHashMap([]const u8, Expr);
 
 ////// Evaluation \\\\\\
 
@@ -32,19 +33,27 @@ pub const Stack = struct {
   }
 };
 
-pub const Dict = struct {
-  //a hashmap of symbols (strings) to Expr's
+pub const Scope = struct {
+  data: Dict,
+  outer: ?*Scope,
+
+  pub fn init(allocator: *Allocator) Scope {
+    return Scope {
+      .data = Dict.init(allocator),
+      .outer = null,
+    };
+  }
 };
 
 pub const Runtime = struct {
   stack: Stack,
-  global: Dict,
+  global: Scope,
   allocator: *Allocator,
   //todo: specify stdout and stdin
   pub fn init(allocator: *Allocator) Runtime {
     return Runtime {
       .stack = Stack.init(allocator),
-      .global = Dict {},
+      .global = Scope.init(allocator),
       .allocator = allocator,
     };
   }
