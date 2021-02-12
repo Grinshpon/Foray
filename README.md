@@ -4,10 +4,12 @@ FORAY is a stack based or concatenative langauge inspired by Forth and Min (whic
 
 Foray files have the extension `.fr`
 
+Read [this](./FORAY.md) for the language design.
+
 ## TODO:
 
-- [x] Lexer
-- [ ] Parser
+- [x] Lexer (still have to parse chars and strings)
+- [x] Parser
 - [ ] Evaluater
 - [ ] Repl
 
