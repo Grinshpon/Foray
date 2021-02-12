@@ -7,7 +7,7 @@ const Token = lexer.Token;
 const ast = @import("ast.zig");
 const Expr = ast.Expr;
 
-const ExprList = std.ArrayList(Expr);
+const ExprList = ast.ExprList;
 
 const ParserError = error {
   NonSymbolDefinition,

@@ -1,5 +1,7 @@
 const std = @import("std");
 
+pub const ExprList = std.ArrayList(Expr);
+
 pub const Expr = union(enum) {
   Int: i64,
   Float: f64,
