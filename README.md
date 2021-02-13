@@ -1,6 +1,6 @@
 # FORAY
 
-FORAY is a stack based or concatenative langauge inspired by Forth and Min (which is inspired by Forth, Factor, and Joy)
+FORAY is a stack based or concatenative langauge inspired by [Forth](http://www.forth.org/) and [Min](https://min-lang.org/) (which is inspired by Forth, [Factor](https://factorcode.org/), and [Joy](http://www.kevinalbrecht.com/code/joy-mirror/joy.html))
 
 Foray files have the extension `.fr`
 
@@ -40,16 +40,3 @@ Define a function and call it:
 Prefixing the `:` to a symbol means to create a word in the dictionary and assign the top of the stack as its value.
 Putting items between parenthesis '(' and ')' is to create a quoted list. Putting the ';' after a list means to unquote and apply it.
 So what's happening is, you assign a list to a word, push the contents of the word onto the stack, then evaluate the list.
-
-### Notes:
-
-Conditionals:
-
-```
-true if ... else ... end
-
-OR
-
-true (...) (...) if
-```
-
