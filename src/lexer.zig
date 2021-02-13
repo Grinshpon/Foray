@@ -157,7 +157,7 @@ pub fn lexSymOrBool(allocator: *Allocator, src: []const u8, index: *u64, len: u6
   var end = start;
   while (ix < len) {
     c = src[ix];
-    if (isSpace(c) or isNumeric(c) or isReserved(c)) {
+    if (isSpace(c) or isReserved(c)) { //or isNumeric()
       break;
     } 
     end += 1;
