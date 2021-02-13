@@ -54,9 +54,11 @@ Functions are just variables containing lists, than can be evaluated with `;`.
 ```
 
 Literal lists can also be evaluated, creating an anonymous function.
-This may not seem to have much of a purpose, but it will since lexical scoping is planned.
+This may not seem to have much of a purpose, but lists introduce their own scope.
+This means variables defined within a list go out of scope after the end of the list.
+Also, variables will overshadows others with the same name in an outer scope.
 
 ```
-> 1 (1 +);
-=> 2
+> 1 :a (2 :a a); a
+=> 2 1
 ```
