@@ -12,7 +12,7 @@ Read [this](./FORAY.md) for the language design.
 - [x] Parser
 - [ ] Evaluater
   - [x] Basic Evaluation
-  - [ ] Builtin operator functionality
+  - [ ] Builtin operator functionality (WIP)
 - [ ] Repl
 - [ ] Standard Library
 
