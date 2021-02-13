@@ -93,8 +93,8 @@ pub const Env = struct {
     std.debug.print("Env:\n", .{});
     while (current != null) {
       var iter = current.?.data.iterator();
-      while (iter.next()) |k| {
-        std.debug.print("\t{}: {}\n", .{k,1});
+      while (iter.next()) |entry| {
+        std.debug.print("\t{}\n", .{entry});
       }
       current = current.?.outer;
     }
