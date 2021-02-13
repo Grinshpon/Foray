@@ -42,7 +42,7 @@ pub const Expr = union(enum) {
       Expr.Str => |x| std.debug.print(" \"{}\"", .{x}),
       Expr.Sym => |x| std.debug.print(" {}", .{x}),
       Expr.Op => |x| std.debug.print(" {}", .{x}),
-      Expr.Define => |x| std.debug.print(" {}", .{x}),
+      Expr.Define => |x| std.debug.print(" :{}", .{x}),
       Expr.Eval => std.debug.print(";", .{}),
       Expr.List => |x| {
         std.debug.print("(", .{});
