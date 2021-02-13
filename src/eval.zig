@@ -6,12 +6,13 @@ const ast = @import("ast.zig");
 const Expr = ast.Expr;
 
 const ExprList = ast.ExprList;
-const Dict = std.AutoHashMap([]const u8, Expr);
+const Dict = std.StringHashMap(Expr);
 
 ////// Evaluation \\\\\\
 
 const EvalError = error {
   CannotEvalValue,
+  SymbolNotFound,
   StackOverflow,
   StackUnderflow,
 };
@@ -61,8 +62,21 @@ pub const Env = struct {
     };
   }
 
-  pub fn put(self: *Env, name: []const u8, expr: Expr) !void {
-    try self.data.put(name, expr);
+  pub fn put(self: *Env, ident: []const u8, expr: Expr) !void {
+    try self.data.put(ident, expr);
+  }
+
+  pub fn get(self: *Env, ident: []const u8) !Expr {
+    var current: ?*Env = self;
+    while (current != null) {
+      if (current.?.data.contains(ident)) {
+        if (current.?.data.get(ident)) |e| {
+          return e;
+        }
+      }
+      current = current.?.outer;
+    }
+    return EvalError.SymbolNotFound;
   }
 };
 
@@ -113,13 +127,20 @@ pub const Runtime = struct {
     }
   }
 
-  pub fn push(self: *Runtime, expr: Expr) !void {
+  pub fn push(self: *Runtime, expr: Expr) anyerror!void {
     switch (expr) {
+      Expr.Sym => |x| {
+        // substitute from env
+        var e = try self.env.get(x);
+        try self.stack.push(e);
+      },
       Expr.Op => |x| {
         //perform defined operation
       },
       Expr.Eval => {
         //pop and eval
+        var e = try self.stack.pop();
+        try self.eval(e);
       },
       Expr.Define => |x| {
         try self.define(x);
