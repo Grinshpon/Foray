@@ -49,9 +49,11 @@ pub fn main() anyerror!void {
       //std.debug.print("{}\n", .{input});
       var bytes_read = input.len;
       var tlist = try lexer.lex(allocator, input, bytes_read);
+      tlist.print();
       var prog = try parser.parse(allocator, &tlist);
+      parser.printAST(&prog);
       try runtime.evaluate(prog);
-      //runtime.env.print();
+      runtime.env.print();
       runtime.printStack();
 
       std.debug.print("> ", .{});

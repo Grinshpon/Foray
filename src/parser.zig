@@ -11,14 +11,20 @@ const ExprList = ast.ExprList;
 
 const ParserError = error {
   NonSymbolDefinition,
+  OperatorOverloadingNotPermitted,
   ExtraClosingParens,
   UnknownError,
 };
 
-pub fn parseDefine(node: *lexer.TokenNode) ParserError!Expr {
-  switch (node.next.?.data) {
-    Token.Sym => |x| {
+pub fn parseDefine(allocator: *Allocator, node: *lexer.TokenNode) !Expr {
+  var skp: u64 = 0;
+  var next = try parseExpr(allocator, node.next.?, &skp);
+  switch (next) {
+    Expr.Sym => |x| {
       return Expr {.Define = x};
+    },
+    Expr.Op => {
+      return ParserError.OperatorOverloadingNotPermitted;
     },
     else => {
       return ParserError.NonSymbolDefinition;
@@ -66,7 +72,7 @@ pub fn parseExpr(allocator: *Allocator, node: *lexer.TokenNode, skip: *u64) anye
     Token.Semicolon => return Expr.Eval,
     Token.Colon => {
       skip.* += 1;
-      return try parseDefine(node);
+      return try parseDefine(allocator, node);
     },
     Token.LParen => {
       return try parseList(allocator, node, skip);
