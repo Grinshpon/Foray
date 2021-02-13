@@ -87,23 +87,36 @@ pub const Env = struct {
     }
     return EvalError.SymbolNotFound;
   }
+
+  pub fn print(self: *Env) void {
+    var current: ?*Env = self;
+    std.debug.print("Env:\n", .{});
+    while (current != null) {
+      var iter = current.?.data.iterator();
+      while (iter.next()) |k| {
+        std.debug.print("\t{}: {}\n", .{k,1});
+      }
+      current = current.?.outer;
+    }
+  }
 };
 
 pub const Runtime = struct {
   stack: Stack,
-  global: Env,
+  global: *Env,
   env: *Env,
   allocator: *Allocator,
   //todo: specify stdout and stdin
-  pub fn init(allocator: *Allocator) Runtime {
-    var r = Runtime {
+  pub fn init(allocator: *Allocator) !Runtime {
+    var newEnv = try allocator.create(Env);
+    newEnv.* = Env.init(allocator);
+    // alternative, do not store global env, just the current one, and remove ptr allocation
+    return Runtime {
       .stack = Stack.init(allocator),
-      .global = Env.init(allocator),
-      .env = undefined,
+      .global = newEnv,
+      .env = newEnv,
       .allocator = allocator,
     };
-    r.env = &r.global;
-    return r;
   }
 
   pub fn openScope(self: *Runtime) !void {
@@ -120,10 +133,18 @@ pub const Runtime = struct {
   }
 
   pub fn evaluate(self: *Runtime, root: Expr) !void {
-    try self.eval(root);
+    //like the normal eval function, but doesn't open/close a new scope, instead variables are in the global scope
+    switch (root) {
+      Expr.List => |x| {
+        for (x.items) |e| {
+          try self.push(e);
+        }
+      },
+      else => return EvalError.CannotEvalValue,
+    }
   }
 
-    pub fn push(self: *Runtime, expr: Expr) anyerror!void {
+  pub fn push(self: *Runtime, expr: Expr) anyerror!void {
     switch (expr) {
       Expr.Sym => |x| {
         // substitute from env

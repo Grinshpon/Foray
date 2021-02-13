@@ -91,8 +91,11 @@ pub fn parse(allocator: *Allocator, tlist: *lexer.TokenList) anyerror!Expr {
   }
 
   try tlist.free();
+  return prog;
+}
+
+pub fn printAST(prog: *Expr) void {
   std.debug.print("AST: ", .{});
   prog.debugPrint();
   std.debug.print("\n",.{});
-  return prog;
 }

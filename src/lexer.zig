@@ -90,6 +90,7 @@ pub const TokenList = struct {
   }
 
   pub fn print(self: *TokenList) void {
+    std.debug.print("Token List: ", .{});
     if (self.len > 0) {
       var current = self.head;
       while (current != null) {
@@ -97,6 +98,7 @@ pub const TokenList = struct {
         current = current.?.next;
       }
     }
+    std.debug.print("\n",.{});
   }
 };
 
@@ -212,8 +214,5 @@ pub fn lex(allocator: *Allocator, src: []const u8, len: u64) !TokenList {
     }
     ix += 1;
   }
-  std.debug.print("Token List: ", .{});
-  tlist.print();
-  std.debug.print("\n",.{});
   return tlist;
 }

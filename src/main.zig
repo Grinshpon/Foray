@@ -26,26 +26,32 @@ pub fn main() anyerror!void {
     var src = try allocator.alloc(u8, fSize);
     var bytes_read = try f.readAll(src);
 
-    std.debug.print("Bytes read: {d}\nSource: {s}\n", .{bytes_read, src});
+    //std.debug.print("Bytes read: {d}\nSource: {s}\n", .{bytes_read, src});
 
     var tlist = try lexer.lex(allocator, src, bytes_read);
+    //tlist.print();
+
     var prog = try parser.parse(allocator, &tlist);
-    var runtime = eval.Runtime.init(allocator);
+    //parser.printAST(&prog);
+
+    var runtime = try eval.Runtime.init(allocator);
     try runtime.evaluate(prog);
+    //runtime.env.print();
     runtime.printStack();
   }
   else {
     //repl mode
-    var runtime = eval.Runtime.init(allocator);
+    var runtime = try eval.Runtime.init(allocator);
     const stdin = std.io.getStdIn().reader();
     var buf: [1024]u8 = undefined;
     std.debug.print("> ", .{});
     while (try stdin.readUntilDelimiterOrEof(buf[0..], '\n')) |input| {
-      std.debug.print("{}\n", .{input});
+      //std.debug.print("{}\n", .{input});
       var bytes_read = input.len;
       var tlist = try lexer.lex(allocator, input, bytes_read);
       var prog = try parser.parse(allocator, &tlist);
       try runtime.evaluate(prog);
+      //runtime.env.print();
       runtime.printStack();
 
       std.debug.print("> ", .{});
