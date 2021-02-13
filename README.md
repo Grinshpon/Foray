@@ -11,7 +11,10 @@ Read [this](./FORAY.md) for the language design.
 - [x] Lexer (still have to parse chars and strings)
 - [x] Parser
 - [ ] Evaluater
+  - [x] Basic Evaluation
+  - [ ] Builtin operator functionality
 - [ ] Repl
+- [ ] Standard Library
 
 ## Examples:
 
