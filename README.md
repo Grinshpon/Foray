@@ -15,6 +15,7 @@ Read [this](./FORAY.md) for the language design.
   - [ ] Builtin operator functionality (WIP)
 - [ ] Repl
 - [ ] Standard Library
+- [ ] Actual error handling and not just a bunch of `try`'s
 
 ## Examples:
 
