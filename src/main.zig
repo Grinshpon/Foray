@@ -10,19 +10,31 @@ pub fn main() anyerror!void {
   var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
   defer arena.deinit();
   const allocator = &arena.allocator;
+  const args = try std.process.argsAlloc(allocator);
+  defer std.process.argsFree(allocator, args);
 
-  var f = try fs.cwd().openFile("foray.fr", fs.File.OpenFlags{ .read = true });
-  defer f.close();
+  for(args) |arg,i| {
+    std.debug.print("{}: {}\n", .{i, arg});
+  }
 
-  var fSize: usize = try f.getEndPos();
-  var src = try allocator.alloc(u8, fSize);
-  var bytes_read = try f.readAll(src);
+  if (args.len > 0) {
+    //interpreter mode
+    var f = try fs.cwd().openFile(args[1], fs.File.OpenFlags{ .read = true });
+    defer f.close();
 
-  std.debug.print("Bytes read: {d}\nSource: {s}\n", .{bytes_read, src});
+    var fSize: usize = try f.getEndPos();
+    var src = try allocator.alloc(u8, fSize);
+    var bytes_read = try f.readAll(src);
 
-  var tlist = try lexer.lex(allocator, src, bytes_read);
-  var prog = try parser.parse(allocator, &tlist);
-  var runtime = eval.Runtime.init(allocator);
-  try runtime.evaluate(prog);
-  runtime.printStack();
+    std.debug.print("Bytes read: {d}\nSource: {s}\n", .{bytes_read, src});
+
+    var tlist = try lexer.lex(allocator, src, bytes_read);
+    var prog = try parser.parse(allocator, &tlist);
+    var runtime = eval.Runtime.init(allocator);
+    try runtime.evaluate(prog);
+    runtime.printStack();
+  }
+  else {
+    //repl mode
+  }
 }
