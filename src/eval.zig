@@ -1,4 +1,5 @@
 const std = @import("std");
+const mem = std.mem;
 const Allocator = std.mem.Allocator;
 
 const parser = @import("parser.zig");
@@ -8,13 +9,12 @@ const Expr = ast.Expr;
 const ExprList = ast.ExprList;
 const Dict = std.StringHashMap(Expr);
 
-////// Evaluation \\\\\\
-
 const EvalError = error {
   CannotEvalValue,
   SymbolNotFound,
   StackOverflow,
   StackUnderflow,
+  TypeMismatch,
 };
 
 pub const Stack = struct {
@@ -41,7 +41,16 @@ pub const Stack = struct {
     self.len -= 1;
     return e;
   }
-  
+
+  pub fn peek(self: *Stack) !Expr {
+    if (self.len == 0) {
+      return EvalError.StackUnderflow;
+    }
+    else {
+      return self.data.items[self.len-1];
+    }
+  }
+
   pub fn print(self: *Stack) void {
     std.debug.print("=>", .{});
     for(self.data.items) |e| {
@@ -114,20 +123,7 @@ pub const Runtime = struct {
     try self.eval(root);
   }
 
-  pub fn eval(self: *Runtime, expr: Expr) !void {
-    switch (expr) {
-      Expr.List => |x| {
-        try self.openScope();
-        for (x.items) |e| {
-          try self.push(e);
-        }
-        self.closeScope();
-      },
-      else => return EvalError.CannotEvalValue,
-    }
-  }
-
-  pub fn push(self: *Runtime, expr: Expr) anyerror!void {
+    pub fn push(self: *Runtime, expr: Expr) anyerror!void {
     switch (expr) {
       Expr.Sym => |x| {
         // substitute from env
@@ -136,6 +132,30 @@ pub const Runtime = struct {
       },
       Expr.Op => |x| {
         //perform defined operation
+        if (mem.eql(u8, x, "*")) {
+          try self.mul();
+        }
+        else if (mem.eql(u8, x, "+")) {
+          try self.add();
+        }
+        else if (mem.eql(u8, x, "/")) {
+          try self.div();
+        }
+        else if (mem.eql(u8, x, "-")) {
+          try self.sub();
+        }
+        else if (mem.eql(u8, x, "drop")) {
+          try self.drop();
+        }
+        else if (mem.eql(u8, x, "swap")) {
+          try self.swap();
+        }
+        else if (mem.eql(u8, x, "rot")) {
+          try self.rot();
+        }
+        else if (mem.eql(u8, x, "dup")) {
+          try self.dup();
+        }
       },
       Expr.Eval => {
         //pop and eval
@@ -155,11 +175,170 @@ pub const Runtime = struct {
     return try self.stack.pop();
   }
 
+  // Builtins
+
+  pub fn eval(self: *Runtime, expr: Expr) !void {
+    switch (expr) {
+      Expr.List => |x| {
+        try self.openScope();
+        for (x.items) |e| {
+          try self.push(e);
+        }
+        self.closeScope();
+      },
+      else => return EvalError.CannotEvalValue,
+    }
+  }
+
+
   pub fn define(self: *Runtime, ident: []const u8) !void {
     var e = try self.pop();
     try self.env.put(ident, e);
   }
 
+  pub fn drop(self: *Runtime) !void {
+    _ = try self.pop();
+  }
+
+  pub fn swap(self: *Runtime) !void {
+    var e1 = try self.pop();
+    var e2 = try self.pop();
+    try self.push(e1);
+    try self.push(e2);
+  }
+
+  pub fn rot(self: *Runtime) !void {
+    var e1 = try self.pop();
+    var e2 = try self.pop();
+    var e3 = try self.pop();
+    try self.push(e1);
+    try self.push(e3);
+    try self.push(e2);
+  }
+
+  pub fn dup(self: *Runtime) !void {
+    var e = try self.stack.peek();
+    try self.push(e);
+  }
+
+  pub fn mul(self: *Runtime) !void {
+    var rhs = try self.pop();
+    var lhs = try self.pop();
+    switch (lhs) {
+      Expr.Int => |x| {
+        switch (rhs) {
+          Expr.Int => |y| {
+            try self.push(Expr {.Int = x*y});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      Expr.Float => |x| {
+        switch (rhs) {
+          Expr.Float => |y| {
+            try self.push(Expr {.Float = x*y});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      else => {
+        return EvalError.TypeMismatch;
+      },
+    }
+  }
+  pub fn div(self: *Runtime) !void {
+    var rhs = try self.pop();
+    var lhs = try self.pop();
+    switch (lhs) {
+      Expr.Int => |x| {
+        switch (rhs) {
+          Expr.Int => |y| {
+            try self.push(Expr {.Int = @divTrunc(x,y)});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      Expr.Float => |x| {
+        switch (rhs) {
+          Expr.Float => |y| {
+            try self.push(Expr {.Float = x/y});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      else => {
+        return EvalError.TypeMismatch;
+      },
+    }
+  }
+  pub fn add(self: *Runtime) !void {
+    var rhs = try self.pop();
+    var lhs = try self.pop();
+    switch (lhs) {
+      Expr.Int => |x| {
+        switch (rhs) {
+          Expr.Int => |y| {
+            try self.push(Expr {.Int = x+y});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      Expr.Float => |x| {
+        switch (rhs) {
+          Expr.Float => |y| {
+            try self.push(Expr {.Float = x+y});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      else => {
+        return EvalError.TypeMismatch;
+      },
+    }
+  }
+  pub fn sub(self: *Runtime) !void {
+    var rhs = try self.pop();
+    var lhs = try self.pop();
+    switch (lhs) {
+      Expr.Int => |x| {
+        switch (rhs) {
+          Expr.Int => |y| {
+            try self.push(Expr {.Int = x-y});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      Expr.Float => |x| {
+        switch (rhs) {
+          Expr.Float => |y| {
+            try self.push(Expr {.Float = x-y});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      else => {
+        return EvalError.TypeMismatch;
+      },
+    }
+  }
+ 
+  // Print Stack
   pub fn printStack(self: *Runtime) void {
     self.stack.print();
   }

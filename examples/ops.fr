@@ -1,0 +1,3 @@
+2 dup 1 + * 5 swap
+
+true false =

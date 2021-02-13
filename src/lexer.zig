@@ -148,7 +148,7 @@ pub fn lexNum(src: []const u8, index: *u64, len: u64, col: *u64) !Token {
   }
 }
 
-pub fn lexSym(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col: *u64) !Token {
+pub fn lexSymOrBool(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col: *u64) !Token {
   var c: u8 = undefined;
   var ix = index.*;
   var start = ix;
@@ -167,7 +167,16 @@ pub fn lexSym(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col
 
   index.* = ix-1;
   col.* += end-start;
-  return Token {.Sym = ident};
+
+  if (std.mem.eql(u8,ident, "true")) {
+    return Token {.Bool = true};
+  }
+  else if (std.mem.eql(u8,ident, "false")) {
+    return Token {.Bool = false};
+  }
+  else {
+    return Token {.Sym = ident};
+  }
 }
 
 pub fn lex(allocator: *Allocator, src: []const u8, len: u64) !TokenList {
@@ -194,9 +203,9 @@ pub fn lex(allocator: *Allocator, src: []const u8, len: u64) !TokenList {
           try tlist.push(tk,row,ocol);
         }
         // todo: chars and strings
-        else { //only remaining option is to parse as a symbol. symbols can be any combination as long as it doesn't contain a reserved character
+        else { //only remaining option is to parse as a symbol or bool. symbols can be any combination as long as it doesn't contain a reserved character
           var ocol = col;
-          var tk = try lexSym(allocator, src, &ix, len, &col);
+          var tk = try lexSymOrBool(allocator, src, &ix, len, &col);
           try tlist.push(tk,row,ocol);
         }
       },
