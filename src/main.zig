@@ -17,7 +17,7 @@ pub fn main() anyerror!void {
     std.debug.print("{}: {}\n", .{i, arg});
   }
 
-  if (args.len > 0) {
+  if (args.len > 1) {
     //interpreter mode
     var f = try fs.cwd().openFile(args[1], fs.File.OpenFlags{ .read = true });
     defer f.close();
@@ -36,5 +36,19 @@ pub fn main() anyerror!void {
   }
   else {
     //repl mode
+    var runtime = eval.Runtime.init(allocator);
+    const stdin = std.io.getStdIn().reader();
+    var buf: [1024]u8 = undefined;
+    std.debug.print("> ", .{});
+    while (try stdin.readUntilDelimiterOrEof(buf[0..], '\n')) |input| {
+      std.debug.print("{}\n", .{input});
+      var bytes_read = input.len;
+      var tlist = try lexer.lex(allocator, input, bytes_read);
+      var prog = try parser.parse(allocator, &tlist);
+      try runtime.evaluate(prog);
+      runtime.printStack();
+
+      std.debug.print("> ", .{});
+    }
   }
 }
