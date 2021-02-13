@@ -24,4 +24,5 @@ pub fn main() anyerror!void {
   var prog = try parser.parse(allocator, &tlist);
   var runtime = eval.Runtime.init(allocator);
   try runtime.evaluate(prog);
+  runtime.printStack();
 }

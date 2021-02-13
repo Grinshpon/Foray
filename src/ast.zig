@@ -14,7 +14,7 @@ pub const Expr = union(enum) {
   List: std.ArrayList(Expr),
   Eval,
 
-  pub fn print(self: Expr) void {
+  pub fn debugPrint(self: Expr) void {
     switch (self) {
       Expr.Int => |x| std.debug.print(" Int({})", .{x}),
       Expr.Float => |x| std.debug.print(" Float({})", .{x}),
@@ -26,6 +26,26 @@ pub const Expr = union(enum) {
       Expr.Eval => std.debug.print(" Eval", .{}),
       Expr.List => |x| {
         std.debug.print("List(", .{});
+        for(x.items) |expr| {
+          expr.print();
+        }
+        std.debug.print(")", .{});
+      },
+    }
+  }
+
+  pub fn print(self: Expr) void {
+    switch (self) {
+      Expr.Int => |x| std.debug.print(" {}", .{x}),
+      Expr.Float => |x| std.debug.print(" {}", .{x}),
+      Expr.Bool => |x| std.debug.print(" {}", .{x}),
+      Expr.Str => |x| std.debug.print(" \"{}\"", .{x}),
+      Expr.Sym => |x| std.debug.print(" {}", .{x}),
+      Expr.Op => |x| std.debug.print(" {}", .{x}),
+      Expr.Define => |x| std.debug.print(" {}", .{x}),
+      Expr.Eval => std.debug.print(";", .{}),
+      Expr.List => |x| {
+        std.debug.print("(", .{});
         for(x.items) |expr| {
           expr.print();
         }
