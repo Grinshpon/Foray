@@ -21,7 +21,7 @@ Read [this](./FORAY.md) for the language design.
 
 ## Examples:
 
-Define a variable:
+### Define a variable:
 
 ```
 > 10 :x
@@ -30,7 +30,7 @@ Define a variable:
 => 10
 ```
 
-Define a function and call it:
+### Define a function and call it:
 
 ```
 > (2 *) :double
@@ -42,3 +42,13 @@ Define a function and call it:
 Prefixing the `:` to a symbol means to create a word in the dictionary and assign the top of the stack as its value.
 Putting items between parenthesis '(' and ')' is to create a quoted list. Putting the ';' after a list means to unquote and apply it.
 So what's happening is, you assign a list to a word, push the contents of the word onto the stack, then evaluate the list.
+
+### Factorial
+
+```
+( dup 1 <= 
+  (drop 1)
+  (dup 1 - dup rot * swap 1 - fac; *)
+  if
+) :fac
+```

@@ -1,7 +1,10 @@
-( 1 <= 
-  ()
-  (dup 1 - dup rot * swap  1 - fac; *)
+( dup 1 <= 
+  (drop 1)
+  (dup 1 - dup rot * swap 1 - fac; *)
   if
 ) :fac
 
 3 fac;
+4 fac;
+5 fac;
+6 fac;

@@ -60,4 +60,5 @@ pub const operators = [_][]const u8 {
   "=", "!=", "<", ">", "<=", ">=",
   "!", "&&", "||",
   "drop", "swap", "rot", "dup",
+  "if",
 };

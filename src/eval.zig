@@ -248,6 +248,9 @@ pub const Runtime = struct {
         else if (mem.eql(u8, x, "||")) {
           try self.doBoolOp(BoolOpTy.Or);
         }
+        else if (mem.eql(u8, x, "if")) {
+          try self.ifn();
+        }
       },
       Expr.Eval => {
         //pop and eval
@@ -379,6 +382,23 @@ pub const Runtime = struct {
       else => {
         return EvalError.TypeMismatch;
       },
+    }
+  }
+
+  pub fn ifn(self: *Runtime) !void {
+    var ifFalse = try self.pop();
+    var ifTrue = try self.pop();
+    var cond = try self.pop();
+    switch (cond) {
+      Expr.Bool => |x| {
+        if (x) {
+          try self.eval(ifTrue);
+        }
+        else {
+          try self.eval(ifFalse);
+        }
+      },
+      else => return EvalError.TypeMismatch,
     }
   }
 
