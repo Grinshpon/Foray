@@ -101,6 +101,53 @@ pub const Env = struct {
   }
 };
 
+pub const NumOpTy = enum {
+  Add, Sub, Mul, Div,
+};
+
+pub const BoolOpTy = enum {
+  Eq, Neq,
+  Lt, Gt, Leq, Geq,
+  And, Or,
+};
+
+fn numOp (comptime T: type, op: NumOpTy, x: T, y: T) T {
+  switch (op) {
+    NumOpTy.Add => return x+y,
+    NumOpTy.Sub => return x-y,
+    NumOpTy.Mul => return x*y,
+    NumOpTy.Div => {
+      if (T == f64) {
+        return x/y;
+      }
+      else {
+        return @divTrunc(x,y);
+      }
+    },
+  }
+}
+
+fn numBoolOp(comptime T: type, op: BoolOpTy, x: T, y: T) !bool {
+  switch(op) {
+    BoolOpTy.Eq => return x == y,
+    BoolOpTy.Neq => return x != y,
+    BoolOpTy.Lt => return x < y,
+    BoolOpTy.Gt => return x > y,
+    BoolOpTy.Leq => return x <= y,
+    BoolOpTy.Geq => return x >= y,
+    else => return EvalError.TypeMismatch,
+  }
+}
+fn boolOp(op: BoolOpTy, x: bool, y: bool) !bool {
+  switch(op) {
+    BoolOpTy.Eq => return x == y,
+    BoolOpTy.Neq => return x != y,
+    BoolOpTy.And => return x and y,
+    BoolOpTy.Or => return x or y,
+    else => return EvalError.TypeMismatch,
+  }
+}
+
 pub const Runtime = struct {
   stack: Stack,
   global: *Env,
@@ -154,16 +201,16 @@ pub const Runtime = struct {
       Expr.Op => |x| {
         //perform defined operation
         if (mem.eql(u8, x, "*")) {
-          try self.mul();
+          try self.doNumOp(NumOpTy.Mul);
         }
         else if (mem.eql(u8, x, "+")) {
-          try self.add();
+          try self.doNumOp(NumOpTy.Add);
         }
         else if (mem.eql(u8, x, "/")) {
-          try self.div();
+          try self.doNumOp(NumOpTy.Div);
         }
         else if (mem.eql(u8, x, "-")) {
-          try self.sub();
+          try self.doNumOp(NumOpTy.Sub);
         }
         else if (mem.eql(u8, x, "drop")) {
           try self.drop();
@@ -176,6 +223,30 @@ pub const Runtime = struct {
         }
         else if (mem.eql(u8, x, "dup")) {
           try self.dup();
+        }
+        else if (mem.eql(u8, x, "=")) {
+          try self.doBoolOp(BoolOpTy.Eq);
+        }
+        else if (mem.eql(u8, x, "!=")) {
+          try self.doBoolOp(BoolOpTy.Neq);
+        }
+        else if (mem.eql(u8, x, "<")) {
+          try self.doBoolOp(BoolOpTy.Lt);
+        }
+        else if (mem.eql(u8, x, ">")) {
+          try self.doBoolOp(BoolOpTy.Gt);
+        }
+        else if (mem.eql(u8, x, "<=")) {
+          try self.doBoolOp(BoolOpTy.Leq);
+        }
+        else if (mem.eql(u8, x, ">=")) {
+          try self.doBoolOp(BoolOpTy.Geq);
+        }
+        else if (mem.eql(u8, x, "&&")) {
+          try self.doBoolOp(BoolOpTy.And);
+        }
+        else if (mem.eql(u8, x, "||")) {
+          try self.doBoolOp(BoolOpTy.Or);
         }
       },
       Expr.Eval => {
@@ -211,7 +282,6 @@ pub const Runtime = struct {
     }
   }
 
-
   pub fn define(self: *Runtime, ident: []const u8) !void {
     var e = try self.pop();
     try self.env.put(ident, e);
@@ -242,14 +312,14 @@ pub const Runtime = struct {
     try self.push(e);
   }
 
-  pub fn mul(self: *Runtime) !void {
+  pub fn doNumOp(self: *Runtime, op: NumOpTy) !void {
     var rhs = try self.pop();
     var lhs = try self.pop();
     switch (lhs) {
       Expr.Int => |x| {
         switch (rhs) {
           Expr.Int => |y| {
-            try self.push(Expr {.Int = x*y});
+            try self.push(Expr {.Int = numOp(i64, op, x, y)});
           },
           else => {
             return EvalError.TypeMismatch;
@@ -259,7 +329,7 @@ pub const Runtime = struct {
       Expr.Float => |x| {
         switch (rhs) {
           Expr.Float => |y| {
-            try self.push(Expr {.Float = x*y});
+            try self.push(Expr {.Float = numOp(f64, op, x, y)});
           },
           else => {
             return EvalError.TypeMismatch;
@@ -271,14 +341,15 @@ pub const Runtime = struct {
       },
     }
   }
-  pub fn div(self: *Runtime) !void {
+
+  pub fn doBoolOp(self: *Runtime, op: BoolOpTy) !void {
     var rhs = try self.pop();
     var lhs = try self.pop();
     switch (lhs) {
       Expr.Int => |x| {
         switch (rhs) {
           Expr.Int => |y| {
-            try self.push(Expr {.Int = @divTrunc(x,y)});
+            try self.push(Expr {.Bool = try numBoolOp(i64, op, x, y)});
           },
           else => {
             return EvalError.TypeMismatch;
@@ -288,7 +359,17 @@ pub const Runtime = struct {
       Expr.Float => |x| {
         switch (rhs) {
           Expr.Float => |y| {
-            try self.push(Expr {.Float = x/y});
+            try self.push(Expr {.Bool = try numBoolOp(f64, op, x, y)});
+          },
+          else => {
+            return EvalError.TypeMismatch;
+          },
+        }
+      },
+      Expr.Bool => |x| {
+        switch (rhs) {
+          Expr.Bool => |y| {
+            try self.push(Expr {.Bool = try boolOp(op, x, y)});
           },
           else => {
             return EvalError.TypeMismatch;
@@ -300,65 +381,7 @@ pub const Runtime = struct {
       },
     }
   }
-  pub fn add(self: *Runtime) !void {
-    var rhs = try self.pop();
-    var lhs = try self.pop();
-    switch (lhs) {
-      Expr.Int => |x| {
-        switch (rhs) {
-          Expr.Int => |y| {
-            try self.push(Expr {.Int = x+y});
-          },
-          else => {
-            return EvalError.TypeMismatch;
-          },
-        }
-      },
-      Expr.Float => |x| {
-        switch (rhs) {
-          Expr.Float => |y| {
-            try self.push(Expr {.Float = x+y});
-          },
-          else => {
-            return EvalError.TypeMismatch;
-          },
-        }
-      },
-      else => {
-        return EvalError.TypeMismatch;
-      },
-    }
-  }
-  pub fn sub(self: *Runtime) !void {
-    var rhs = try self.pop();
-    var lhs = try self.pop();
-    switch (lhs) {
-      Expr.Int => |x| {
-        switch (rhs) {
-          Expr.Int => |y| {
-            try self.push(Expr {.Int = x-y});
-          },
-          else => {
-            return EvalError.TypeMismatch;
-          },
-        }
-      },
-      Expr.Float => |x| {
-        switch (rhs) {
-          Expr.Float => |y| {
-            try self.push(Expr {.Float = x-y});
-          },
-          else => {
-            return EvalError.TypeMismatch;
-          },
-        }
-      },
-      else => {
-        return EvalError.TypeMismatch;
-      },
-    }
-  }
- 
+
   // Print Stack
   pub fn printStack(self: *Runtime) void {
     self.stack.print();
