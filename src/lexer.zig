@@ -2,7 +2,11 @@ const std = @import("std");
 const fmt = std.fmt;
 const Allocator = std.mem.Allocator;
 
-////// Lexer \\\\\\
+pub const LexError = error {
+  LexError,
+  LexNumError,
+  InternalError,
+};
 
 pub const Token = union(enum) {
   Int: i64,
@@ -33,8 +37,8 @@ pub const TokenNode = struct {
   col: u64,
   next: ?*TokenNode,
 
-  pub fn new(allocator: *Allocator, tk: Token, row: u64, col: u64) !*TokenNode {
-    var node: *TokenNode = try allocator.create(TokenNode);
+  pub fn new(allocator: *Allocator, tk: Token, row: u64, col: u64) LexError!*TokenNode {
+    var node: *TokenNode = allocator.create(TokenNode) catch return LexError.InternalError;
     node.data = tk;
     node.next = null;
     node.row = row;
@@ -63,7 +67,7 @@ pub const TokenList = struct {
     };
   }
 
-  pub fn push(self: *TokenList, tk: Token, row: u64, col: u64) !void {
+  pub fn push(self: *TokenList, tk: Token, row: u64, col: u64) LexError!void {
     var node = try TokenNode.new(self.allocator, tk, row, col);
     if (self.head == null) {
       self.head = node;
@@ -76,7 +80,7 @@ pub const TokenList = struct {
     self.len += 1;
   }
 
-  pub fn free(self: *TokenList) !void {
+  pub fn free(self: *TokenList) void {
     if (self.len > 0) {
       var current = self.head;
       //note: either destroy alloc'd strings from Token.String and Token.Sym
@@ -121,7 +125,7 @@ fn isNumeric(c: u8) bool {
   return (c >= '0' and c <= '9');
 }
 
-pub fn lexNum(src: []const u8, index: *u64, len: u64, col: *u64) !Token {
+pub fn lexNum(src: []const u8, index: *u64, len: u64, col: *u64) LexError!Token {
   var c: u8 = undefined;
   var ix = index.*;
   var start = ix;
@@ -143,14 +147,14 @@ pub fn lexNum(src: []const u8, index: *u64, len: u64, col: *u64) !Token {
   var slice = src[start..end];
   col.* += end-start;
   if (isFloat) {
-    return Token {.Float = try fmt.parseFloat(f64, slice)};
+    return Token {.Float = fmt.parseFloat(f64, slice) catch return LexError.LexNumError};
   }
   else {
-    return Token {.Int = try fmt.parseInt(i64, slice, 10)}; 
+    return Token {.Int = fmt.parseInt(i64, slice, 10) catch return LexError.LexNumError}; 
   }
 }
 
-pub fn lexSymOrBool(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col: *u64) !Token {
+pub fn lexSymOrBool(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col: *u64) LexError!Token {
   var c: u8 = undefined;
   var ix = index.*;
   var start = ix;
@@ -164,7 +168,7 @@ pub fn lexSymOrBool(allocator: *Allocator, src: []const u8, index: *u64, len: u6
     ix += 1;
   }
   var slice = src[start..end];
-  var ident = try allocator.alloc(u8, end-start);
+  var ident = allocator.alloc(u8, end-start) catch return LexError.InternalError;
   std.mem.copy(u8, ident, slice);
 
   index.* = ix-1;
@@ -181,7 +185,7 @@ pub fn lexSymOrBool(allocator: *Allocator, src: []const u8, index: *u64, len: u6
   }
 }
 
-pub fn lex(allocator: *Allocator, src: []const u8, len: u64) !TokenList {
+pub fn lex(allocator: *Allocator, src: []const u8, len: u64) LexError!TokenList {
   var row: u64 = 1;
   var col: u64 = 1;
   var tlist = TokenList.new(allocator);

@@ -4,6 +4,8 @@
   if
 ) :fac
 
+1 fac;
+2 fac;
 3 fac;
 4 fac;
 5 fac;

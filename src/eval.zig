@@ -9,12 +9,13 @@ const Expr = ast.Expr;
 const ExprList = ast.ExprList;
 const Dict = std.StringHashMap(Expr);
 
-const EvalError = error {
+pub const EvalError = error {
   CannotEvalValue,
   SymbolNotFound,
   StackOverflow,
   StackUnderflow,
   TypeMismatch,
+  InternalError,
 };
 
 pub const Stack = struct {
@@ -28,12 +29,12 @@ pub const Stack = struct {
     };
   }
 
-  pub fn push(self: *Stack, item: Expr) !void {
-    try self.data.append(item);
+  pub fn push(self: *Stack, item: Expr) EvalError!void {
+    self.data.append(item) catch |err| return EvalError.InternalError;
     self.len += 1;
   }
 
-  pub fn pop(self: *Stack) !Expr {
+  pub fn pop(self: *Stack) EvalError!Expr {
     if (self.len == 0) {
       return EvalError.StackUnderflow;
     }
@@ -42,7 +43,7 @@ pub const Stack = struct {
     return e;
   }
 
-  pub fn peek(self: *Stack) !Expr {
+  pub fn peek(self: *Stack) EvalError!Expr {
     if (self.len == 0) {
       return EvalError.StackUnderflow;
     }
@@ -71,11 +72,11 @@ pub const Env = struct {
     };
   }
 
-  pub fn put(self: *Env, ident: []const u8, expr: Expr) !void {
-    try self.data.put(ident, expr);
+  pub fn put(self: *Env, ident: []const u8, expr: Expr) EvalError!void {
+    self.data.put(ident, expr) catch return EvalError.InternalError;
   }
 
-  pub fn get(self: *Env, ident: []const u8) !Expr {
+  pub fn get(self: *Env, ident: []const u8) EvalError!Expr {
     var current: ?*Env = self;
     while (current != null) {
       if (current.?.data.contains(ident)) {
@@ -127,7 +128,7 @@ fn numOp (comptime T: type, op: NumOpTy, x: T, y: T) T {
   }
 }
 
-fn numBoolOp(comptime T: type, op: BoolOpTy, x: T, y: T) !bool {
+fn numBoolOp(comptime T: type, op: BoolOpTy, x: T, y: T) EvalError!bool {
   switch(op) {
     BoolOpTy.Eq => return x == y,
     BoolOpTy.Neq => return x != y,
@@ -138,7 +139,7 @@ fn numBoolOp(comptime T: type, op: BoolOpTy, x: T, y: T) !bool {
     else => return EvalError.TypeMismatch,
   }
 }
-fn boolOp(op: BoolOpTy, x: bool, y: bool) !bool {
+fn boolOp(op: BoolOpTy, x: bool, y: bool) EvalError!bool {
   switch(op) {
     BoolOpTy.Eq => return x == y,
     BoolOpTy.Neq => return x != y,
@@ -166,9 +167,9 @@ pub const Runtime = struct {
     };
   }
 
-  pub fn openScope(self: *Runtime) !void {
+  pub fn openScope(self: *Runtime) EvalError!void {
     var current = self.env;
-    self.env = try self.allocator.create(Env);
+    self.env = self.allocator.create(Env) catch return EvalError.InternalError;
     self.env.* = Env.init(self.allocator);
     self.env.outer = current;
   }
@@ -179,7 +180,7 @@ pub const Runtime = struct {
     self.allocator.destroy(current);
   }
 
-  pub fn evaluate(self: *Runtime, root: Expr) !void {
+  pub fn evaluate(self: *Runtime, root: Expr) EvalError!void {
     //like the normal eval function, but doesn't open/close a new scope, instead variables are in the global scope
     switch (root) {
       Expr.List => |x| {
@@ -191,7 +192,7 @@ pub const Runtime = struct {
     }
   }
 
-  pub fn push(self: *Runtime, expr: Expr) anyerror!void {
+  pub fn push(self: *Runtime, expr: Expr) EvalError!void {
     switch (expr) {
       Expr.Sym => |x| {
         // substitute from env
@@ -266,13 +267,13 @@ pub const Runtime = struct {
     }
   }
 
-  pub fn pop(self: *Runtime) !Expr {
+  pub fn pop(self: *Runtime) EvalError!Expr {
     return try self.stack.pop();
   }
 
   // Builtins
 
-  pub fn eval(self: *Runtime, expr: Expr) !void {
+  pub fn eval(self: *Runtime, expr: Expr) EvalError!void {
     switch (expr) {
       Expr.List => |x| {
         try self.openScope();
@@ -285,23 +286,23 @@ pub const Runtime = struct {
     }
   }
 
-  pub fn define(self: *Runtime, ident: []const u8) !void {
+  pub fn define(self: *Runtime, ident: []const u8) EvalError!void {
     var e = try self.pop();
     try self.env.put(ident, e);
   }
 
-  pub fn drop(self: *Runtime) !void {
+  pub fn drop(self: *Runtime) EvalError!void {
     _ = try self.pop();
   }
 
-  pub fn swap(self: *Runtime) !void {
+  pub fn swap(self: *Runtime) EvalError!void {
     var e1 = try self.pop();
     var e2 = try self.pop();
     try self.push(e1);
     try self.push(e2);
   }
 
-  pub fn rot(self: *Runtime) !void {
+  pub fn rot(self: *Runtime) EvalError!void {
     var e1 = try self.pop();
     var e2 = try self.pop();
     var e3 = try self.pop();
@@ -310,12 +311,12 @@ pub const Runtime = struct {
     try self.push(e2);
   }
 
-  pub fn dup(self: *Runtime) !void {
+  pub fn dup(self: *Runtime) EvalError!void {
     var e = try self.stack.peek();
     try self.push(e);
   }
 
-  pub fn doNumOp(self: *Runtime, op: NumOpTy) !void {
+  pub fn doNumOp(self: *Runtime, op: NumOpTy) EvalError!void {
     var rhs = try self.pop();
     var lhs = try self.pop();
     switch (lhs) {
@@ -345,7 +346,7 @@ pub const Runtime = struct {
     }
   }
 
-  pub fn doBoolOp(self: *Runtime, op: BoolOpTy) !void {
+  pub fn doBoolOp(self: *Runtime, op: BoolOpTy) EvalError!void {
     var rhs = try self.pop();
     var lhs = try self.pop();
     switch (lhs) {
@@ -385,7 +386,7 @@ pub const Runtime = struct {
     }
   }
 
-  pub fn ifn(self: *Runtime) !void {
+  pub fn ifn(self: *Runtime) EvalError!void {
     var ifFalse = try self.pop();
     var ifTrue = try self.pop();
     var cond = try self.pop();
