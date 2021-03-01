@@ -252,6 +252,9 @@ pub const Runtime = struct {
         else if (mem.eql(u8, x, "if")) {
           try self.ifn();
         }
+        else if (mem.eql(u8, x, "!")) {
+          try self.not();
+        }
       },
       Expr.Eval => {
         //pop and eval
@@ -401,6 +404,17 @@ pub const Runtime = struct {
       },
       else => return EvalError.TypeMismatch,
     }
+  }
+
+  pub fn not(self: *Runtime) EvalError!void {
+    var x = try self.pop();
+    switch (x) {
+      Expr.Bool => |xp| {
+        try self.push(Expr {.Bool = !xp});
+      },
+      else => return EvalError.TypeMismatch,
+    }
+
   }
 
   // Print Stack
