@@ -4,7 +4,7 @@ FORAY is a stack based or concatenative langauge inspired by [Forth](http://www.
 
 Foray files have the extension `.fr`
 
-Read [this](./FORAY.md) for the language design.
+Read [this](./FORAY.md) for the language design and basics.
 
 ## TODO:
 

@@ -123,3 +123,5 @@ Here are the builtin operators:
 - Conditional:
   * `if`: Takes three values off the stack in this order: `cond ifTrue ifFalse`. If the `cond` value is true, then `ifTrue` is evaluated, otherwise `ifFalse` is evaluated.
     Ex: `true (1) (2) if` results in `1`. 
+- Composition:
+  * `map`: Takes a list and a function and applies the function to each item in the list. Ex: `(1 2 3) (1 +) map` results in `(2 3 4)`.

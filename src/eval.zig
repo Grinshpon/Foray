@@ -255,6 +255,9 @@ pub const Runtime = struct {
         else if (mem.eql(u8, x, "!")) {
           try self.not();
         }
+        else if (mem.eql(u8, x, "map")) {
+          try self.map();
+        }
       },
       Expr.Eval => {
         //pop and eval
@@ -414,7 +417,27 @@ pub const Runtime = struct {
       },
       else => return EvalError.TypeMismatch,
     }
-
+  }
+ 
+  pub fn map(self: *Runtime) EvalError!void {
+    var fl = try self.pop();
+    var ls = try self.pop();
+    switch (fl) {
+      Expr.List => |f| {
+        switch (ls) {
+          Expr.List => |l| {
+            for (l.items) |*item| {
+              try self.push(item.*);
+              try self.eval(fl);
+              item.* = try self.pop();
+            }
+            try self.push(ls);
+          },
+          else => return EvalError.TypeMismatch,
+        }
+      },
+      else => return EvalError.TypeMismatch,
+    }
   }
 
   // Print Stack
