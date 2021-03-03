@@ -62,6 +62,7 @@ pub fn parseExpr(allocator: *Allocator, node: *lexer.TokenNode, skip: *u64) Pars
     Token.Float => |x| return Expr {.Float = x},
     Token.Bool => |x| return Expr {.Bool = x},
     Token.Str => |x| return Expr {.Str = x},
+    Token.Char => |x| return Expr {.Char = x},
     Token.Sym => |x| {
       for (ast.operators) |op| {
         if (std.mem.eql(u8, op, x)) {

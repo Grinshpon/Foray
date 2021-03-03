@@ -7,6 +7,7 @@ pub const Expr = union(enum) {
   Float: f64,
   Bool: bool,
   Str: []const u8,
+  Char: []const u8,
   //differentiate symbols, assignment, and operators (builtins)
   Sym: []const u8,
   Op: []const u8,
@@ -20,6 +21,7 @@ pub const Expr = union(enum) {
       Expr.Float => |x| std.debug.print(" Float({})", .{x}),
       Expr.Bool => |x| std.debug.print(" Bool({})", .{x}),
       Expr.Str => |x| std.debug.print(" Str(\"{}\")", .{x}),
+      Expr.Char => |x| std.debug.print(" Char(\'{}\')", .{x}),
       Expr.Sym => |x| std.debug.print(" Sym({})", .{x}),
       Expr.Op => |x| std.debug.print(" Op({})", .{x}),
       Expr.Define => |x| std.debug.print(" Define({})", .{x}),
@@ -40,6 +42,7 @@ pub const Expr = union(enum) {
       Expr.Float => |x| std.debug.print(" {}", .{x}),
       Expr.Bool => |x| std.debug.print(" {}", .{x}),
       Expr.Str => |x| std.debug.print(" \"{}\"", .{x}),
+      Expr.Char => |x| std.debug.print(" \'{}\'", .{x}),
       Expr.Sym => |x| std.debug.print(" {}", .{x}),
       Expr.Op => |x| std.debug.print(" {}", .{x}),
       Expr.Define => |x| std.debug.print(" :{}", .{x}),

@@ -13,6 +13,7 @@ pub const Token = union(enum) {
   Float: f64,
   Bool: bool,
   Str: []const u8,
+  Char: []const u8, //for now. char parsing comes later
   Sym: []const u8,
   LParen, RParen, Colon, Semicolon,
 };
@@ -154,6 +155,52 @@ pub fn lexNum(src: []const u8, index: *u64, len: u64, col: *u64) LexError!Token 
   }
 }
 
+pub fn lexStr(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col: *u64) LexError!Token {
+  var c: u8 = undefined;
+  var ix = index.* + 1;
+  var start = ix;
+  var end = start;
+  while (ix < len) {
+    c = src[ix];
+    if (c == '"' and src[ix-1] != '\\') {
+      break;
+    }
+    end += 1;
+    ix += 1;
+  }
+  var slice = src[start..end];
+  var str = allocator.alloc(u8, end-start) catch return LexError.InternalError;
+  std.mem.copy(u8, str, slice);
+
+  index.* = ix;
+  col.* += end-start;
+
+  return Token {.Str = str};
+}
+//TODO: real character parsing (escape codes and shizz)
+pub fn lexChar(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col: *u64) LexError!Token {
+  var c: u8 = undefined;
+  var ix = index.* + 1;
+  var start = ix;
+  var end = start;
+  while (ix < len) {
+    c = src[ix];
+    if (c == '\'' and src[ix-1] != '\\') {
+      break;
+    }
+    end += 1;
+    ix += 1;
+  }
+  var slice = src[start..end];
+  var str = allocator.alloc(u8, end-start) catch return LexError.InternalError;
+  std.mem.copy(u8, str, slice);
+
+  index.* = ix;
+  col.* += end-start;
+
+  return Token {.Char = str};
+}
+
 pub fn lexSymOrBool(allocator: *Allocator, src: []const u8, index: *u64, len: u64, col: *u64) LexError!Token {
   var c: u8 = undefined;
   var ix = index.*;
@@ -199,6 +246,16 @@ pub fn lex(allocator: *Allocator, src: []const u8, len: u64) LexError!TokenList 
       ':' => {try tlist.push(Token.Colon, row, col); col += 1;},
       ';' => {try tlist.push(Token.Semicolon, row, col); col += 1;},
       '\n' => {row += 1; col = 1;},
+      '"' => {
+        var ocol = col;
+        var tk = try lexStr(allocator, src, &ix, len, &col);
+        try tlist.push(tk,row,ocol);
+      },
+      '\'' => {
+        var ocol = col;
+        var tk = try lexChar(allocator, src, &ix, len, &col);
+        try tlist.push(tk,row,ocol);
+      },
       else => {
         if (isSpace(c)) {
           col += 1;
