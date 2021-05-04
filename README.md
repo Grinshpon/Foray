@@ -6,13 +6,17 @@ Foray files have the extension `.fr`
 
 Read [this](./FORAY.md) for the language design and basics.
 
+## Building and Running Instructions
+
+Clone the project then run `zig build` to compile or `zig build run` to compile and run. Running with no arguments launches a repl. Running with a file given as an argument will look for and run that file.
+
 ## TODO:
 
 - [x] Lexer (still have to parse chars and strings)
 - [x] Parser
 - [ ] Evaluater
   - [x] Basic Evaluation
-  - [ ] Builtin operator functionality (WIP)
+  - [x] Builtin operator functionality (WIP)
 - [ ] Repl
   - [x] Basic REPL
   - [ ] Features like history, etc
