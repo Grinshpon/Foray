@@ -1,6 +1,6 @@
 ( dup 1 <= 
   (drop 1)
-  (dup 1 - dup rot * swap 1 - fac; *)
+  (dup 1 - fac; *)
   if
 ) :fac
 
